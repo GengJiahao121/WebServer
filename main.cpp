@@ -57,10 +57,8 @@ void addsig( int sig)
 
 void timer_handler()
 {   
-    printf("timer_handler epollfd = %d\n", epollfd);
     // 定时处理任务，实际上就是调用tick()函数
     timer_lst.tick();
-    printf("fdfdfdfdfdfd");
     // 因为一次 alarm 调用只会引起一次SIGALARM 信号，所以我们要重新定时，以不断触发 SIGALARM信号。
     alarm(TIMESLOT);
 }
@@ -141,7 +139,7 @@ int main( int argc, char* argv[] ) {
     // 设置信号处理函数
     addsig( SIGALRM );  // 当发生SIGALRM信号时（超时），向管道中写数据
     addsig( SIGTERM );  // 程序正常结束时，向管道中写数据
-    // bool stop_server = false;
+    bool stop_server = false;
 
     client_data* users_timer = new client_data[MAX_FD];  
     bool timeout = false;
@@ -149,6 +147,11 @@ int main( int argc, char* argv[] ) {
     
     while(true) {
         
+        if (stop_server == true){
+            break;
+        }
+
+
         // events 传出参数，保存了发送了变化的文件描述符的信息
         int number = epoll_wait( epollfd, events, MAX_EVENT_NUMBER, -1 );
         
@@ -199,14 +202,12 @@ int main( int argc, char* argv[] ) {
                 util_timer* timer = users_timer[sockfd].timer;
                 timer_lst.del_timer(timer);
 
-            } else if( ( sockfd == pipefd[0] ) && ( events[i].events & EPOLLIN ) ) {    // 有可读事件进来
+            } else if( ( sockfd == pipefd[0] ) && ( events[i].events & EPOLLIN ) ) {    // 管道有可读事件进来
 
-                printf("要处理信号\n");
                 // 处理信号
                 int sig;
                 char signals[1024];
                 ret = recv( pipefd[0], signals, sizeof( signals ), 0 );
-                printf("读到的信号为：%s\n", signals);
                 if( ret == -1 ) {
                     continue;
                 } else if( ret == 0 ) {
@@ -218,15 +219,13 @@ int main( int argc, char* argv[] ) {
                             {
                                 // 用timeout变量标记有定时任务需要处理，但不立即处理定时任务
                                 // 这是因为定时任务的优先级不是很高，我们优先处理其他更重要的任务。
-                                printf("SIGALRM\n");
                                 timeout = true;
                                 break;
                             }
                             case SIGTERM:
                             {
-                                // stop_server = true;
-                                printf("SIGTERM\n");
-                                users[sockfd].close_conn();
+                                stop_server = true;
+                                // users[sockfd].close_conn();
                             }
                         }
                     }
@@ -268,7 +267,6 @@ int main( int argc, char* argv[] ) {
 
         // 最后处理定时事件，因为I/O事件有更高的优先级。当然，这样做将导致定时任务不能精准的按照预定的时间执行。
         if( timeout ) {
-            printf("main epollfd = %d\n", epollfd);
             timer_handler();
             timeout = false;
         }

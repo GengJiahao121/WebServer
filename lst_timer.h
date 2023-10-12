@@ -50,24 +50,20 @@ public:
     // 将目标定时器timer添加到链表中
     void add_timer( util_timer* timer ) {
         if( !timer ) {
-            printf("1\n");
             return;
         }
         if( !head ) {
-            printf("2\n");
             head = tail = timer;
             return; 
         }
         /* 如果目标定时器的超时时间小于当前链表中所有定时器的超时时间，则把该定时器插入链表头部,作为链表新的头节点，
            否则就需要调用重载函数 add_timer(),把它插入链表中合适的位置，以保证链表的升序特性 */
         if( timer->expire < head->expire ) {
-            printf("4\n");
             timer->next = head;
             head->prev = timer;
             head = timer;
             return;
         }
-        printf("3\n");
         add_timer(timer, head);
     }
     
@@ -137,7 +133,6 @@ public:
             printf("head is NULL\n");
             return;
         }
-        // printf("tick epollfd = %d\n", epollfd);
         printf( "timer tick\n" );
         time_t cur = time( NULL );  // 获取当前系统时间
         util_timer* tmp = head;
