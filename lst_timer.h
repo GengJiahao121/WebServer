@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <arpa/inet.h>
+#include "log.h"
 
 #define BUFFER_SIZE 64
 

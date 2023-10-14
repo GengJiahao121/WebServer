@@ -11,8 +11,8 @@
 #include "locker.h"
 #include "threadpool.h"
 #include "http_conn.h"
-
 #include "lst_timer.h"
+#include "log.h"
 
 #define MAX_FD 65536   // 最大的文件描述符个数
 #define MAX_EVENT_NUMBER 10000  // 监听的最大的事件数量
@@ -92,6 +92,14 @@ int main( int argc, char* argv[] ) {
 
     int port = atoi( argv[1] );
 
+
+    // 日志系统 
+    // 异步方式
+    int m_close_log = 0;
+    Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
+    // 同步方式
+    //Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
+
     // 让当前进程忽略sigpipe信号
     addsig( SIGPIPE, SIG_IGN ); 
 
@@ -156,6 +164,7 @@ int main( int argc, char* argv[] ) {
         int number = epoll_wait( epollfd, events, MAX_EVENT_NUMBER, -1 );
         
         if ( ( number < 0 ) && ( errno != EINTR ) ) {
+            LOG_ERROR("%s", "epoll failure");
             printf( "epoll failure\n" );
             break;
         }
@@ -171,6 +180,7 @@ int main( int argc, char* argv[] ) {
                 int connfd = accept( listenfd, ( struct sockaddr* )&client_address, &client_addrlength );
                 
                 if ( connfd < 0 ) {
+                    LOG_ERROR("error is: %d", errno);
                     printf( "errno is: %d\n", errno );
                     continue;
                 } 
@@ -242,6 +252,7 @@ int main( int argc, char* argv[] ) {
                     if( timer ) {
                         time_t cur = time( NULL );
                         timer->expire = cur + 3 * TIMESLOT;
+                        LOG_INFO("adjust timer once");
                         printf( "adjust timer once\n" );
                         timer_lst.adjust_timer( timer );
                     }
