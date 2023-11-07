@@ -13,6 +13,8 @@
 #include "http_conn.h"
 #include "lst_timer.h"
 #include "log.h"
+#include "config.h"
+#include "sql_connection_pool.h"
 
 #define MAX_FD 65536   // 最大的文件描述符个数
 #define MAX_EVENT_NUMBER 10000  // 监听的最大的事件数量
@@ -92,13 +94,28 @@ int main( int argc, char* argv[] ) {
 
     int port = atoi( argv[1] );
 
-
+    Config config;
     // 日志系统 
     // 异步方式
-    int m_close_log = 0;
-    Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
+    // int m_close_log = 0;
+    int m_close_log = config.m_close_log;
+    Log::get_instance()->init("./ServerLog", config.m_close_log, 2000, 800000, 800);
     // 同步方式
     //Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
+
+    // 数据库连接池
+    connection_pool *m_connPool;
+    string m_user = "root";         //登陆数据库用户名
+    string m_passWord = "root";     //登陆数据库密码
+    string m_databaseName = "gjh_webserver"; //使用数据库名
+    int m_sql_num = 5;
+    m_connPool = connection_pool::GetInstance();
+    m_connPool->init("localhost", m_user, m_passWord, m_databaseName, 3306, m_sql_num, m_close_log);
+    //初始化数据库读取表
+    http_conn *user;
+    user->initmysql_result(m_connPool);
+
+
 
     // 让当前进程忽略sigpipe信号
     addsig( SIGPIPE, SIG_IGN ); 
@@ -173,12 +190,12 @@ int main( int argc, char* argv[] ) {
             
             int sockfd = events[i].data.fd;
             
+            // 有新的连接进来
             if( sockfd == listenfd ) {
                 
                 struct sockaddr_in client_address;
                 socklen_t client_addrlength = sizeof( client_address );
                 int connfd = accept( listenfd, ( struct sockaddr* )&client_address, &client_addrlength );
-                
                 if ( connfd < 0 ) {
                     LOG_ERROR("error is: %d", errno);
                     printf( "errno is: %d\n", errno );
@@ -204,7 +221,7 @@ int main( int argc, char* argv[] ) {
                 users_timer[connfd].timer = timer;
                 timer_lst.add_timer( timer );
 
-
+            // 该连接内部发生错误，关闭连接
             } else if( events[i].events & ( EPOLLRDHUP | EPOLLHUP | EPOLLERR ) ) {
                 
                 users[sockfd].close_conn();
@@ -212,6 +229,7 @@ int main( int argc, char* argv[] ) {
                 util_timer* timer = users_timer[sockfd].timer;
                 timer_lst.del_timer(timer);
 
+            // 定时器超时并向管道的写入数据，epoll监测到该文件描述符有读事件发生
             } else if( ( sockfd == pipefd[0] ) && ( events[i].events & EPOLLIN ) ) {    // 管道有可读事件进来
 
                 // 处理信号
@@ -241,11 +259,13 @@ int main( int argc, char* argv[] ) {
                     }
                 }
 
+            // 如果sockfd发生除了管道读事件之外的读事件，那么就是有客户端发送过来数据，需要服务的主线程读到读缓冲区
             } else if(events[i].events & EPOLLIN) {
 
                 util_timer* timer = users_timer[sockfd].timer;
                 
                 if(users[sockfd].read()) {
+                    // 通过read()函数读取文件描述符中到达的数据，如何读取成功，将封装好的http_conn对象加入到线程池队列，等待被处理（解析）
                     pool->append(users + sockfd);
 
                     // 如果某个客户端上有数据可读，则我们要调整该连接对应的定时器，以延迟该连接被关闭的时间。

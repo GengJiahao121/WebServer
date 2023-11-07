@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <pthread.h>
 #include "block_queue.h"
+#include "config.h"
 
 using namespace std;
 

@@ -20,6 +20,9 @@
 #include <errno.h>
 #include "locker.h"
 #include <sys/uio.h>
+#include "sql_connection_pool.h"
+#include <map>
+#include "log.h"
 
 /*
 http_conn类是用来实例化客户端信息的，包括发来的信息和要发送的信息
@@ -72,6 +75,10 @@ public:
     void process(); // 处理客户端请求
     bool read();// 非阻塞读
     bool write();// 非阻塞写
+
+    void initmysql_result(connection_pool *connPool);
+    void sql_pool();
+
 private:
     void init();    // 初始化连接
     HTTP_CODE process_read();    // 解析HTTP请求
@@ -99,6 +106,8 @@ private:
 public:
     static int m_epollfd;       // 所有socket上的事件都被注册到同一个epoll内核事件中，所以设置成静态的
     static int m_user_count;    // 统计用户的数量
+    MYSQL *mysql;
+    
 
 private:
     int m_sockfd;           // 该HTTP连接的socket和对方的socket地址
@@ -125,6 +134,16 @@ private:
     struct stat m_file_stat;                // 目标文件的状态。通过它我们可以判断文件是否存在、是否为目录、是否可读，并获取文件大小等信息
     struct iovec m_iv[2];                   // 我们将采用writev来执行写操作，所以定义下面两个成员，其中m_iv_count表示被写内存块的数量。
     int m_iv_count;
+
+    int cgi;        //是否启用的POST
+    char *m_string; //存储请求头数据
+    int bytes_to_send;
+    int bytes_have_send;
+    
+    map<string, string> m_users;
+    int m_close_log;
+    
+    
 };
 
 #endif
