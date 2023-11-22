@@ -1,6 +1,19 @@
 # WebServer
 
-- 测试前确认已安装MySQL数据库
+## 目录
+
+[1. 服务器的部署](#1)
+
+[2. 技术介绍](#2)
+
+[2.1 线程池 + 非阻塞socket + epoll + 模拟Proactor事务处理模型](#2-1)
+
+
+## <a id="1">1 服务器部署</a>
+
+1、测试前确认已安装MySQL数据库 并 创建对应的数据库、表
+
+安装
 
 ```
 Ubuntu系统：
@@ -17,6 +30,8 @@ sudo systemctl enable mysql
 sudo apt-get install libmysqlclient-dev
 ```
 
+创建
+
 ```
 create database gjh_webserver;
 
@@ -31,10 +46,42 @@ select * from user;
 exit;
 ```
 
+2、编译
+
 **手动编译时，要添加“-lmysqlclient”选项链接mysql数据库**
 
+**手动编译时，要添加“-pthread”选项链接线程库**
 
-- 
+`g++ *.cpp -pthread -lmysqlclient`
+
+3、启动服务器
+
+指定服务器程序端口号：10000
+
+`./a.out 10000`
+
+4、访问服务器
+
+浏览器输入（实现不同功能）：
+
+    登陆页面：
+    http://xxx.xxx.xxx.xxx:10000/1
+
+## <a id="2">2 技术介绍</a>
+
+### <a id="2-1">2.1 线程池 + 非阻塞socket + epoll + 模拟Proactor事务处理模型</a>
+
+
+
+
+
+
+
+
+
+
+
+
 
 到2023年11月7日止：
 
