@@ -95,6 +95,7 @@ int main( int argc, char* argv[] ) {
     int port = atoi( argv[1] );
 
     Config config;
+
     // 日志系统 
     // 异步方式
     // int m_close_log = 0;
@@ -115,8 +116,6 @@ int main( int argc, char* argv[] ) {
     http_conn *user;
     user->initmysql_result(m_connPool);
 
-
-
     // 让当前进程忽略sigpipe信号
     addsig( SIGPIPE, SIG_IGN ); 
 
@@ -130,28 +129,24 @@ int main( int argc, char* argv[] ) {
 
     http_conn* users = new http_conn[ MAX_FD ];
 
-    int listenfd = socket( PF_INET, SOCK_STREAM, 0 );
-
+    int listenfd = socket( PF_INET, SOCK_STREAM, 0 );   // 创建socket并返回对应的文件描述符
+    // 将本机的一些信息添加到sockaddr_in中
     int ret = 0;
     struct sockaddr_in address;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_family = AF_INET;
     address.sin_port = htons( port );
-
     // 端口复用
     int reuse = 1;
     setsockopt( listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof( reuse ) );
 
     ret = bind( listenfd, ( struct sockaddr* )&address, sizeof( address ) );
-    
     ret = listen( listenfd, 5 );
 
     // 创建epoll对象，和事件数组，添加
     epoll_event events[ MAX_EVENT_NUMBER ];
     epollfd = epoll_create( 5 );
-    // 添加到epoll对象中
     addfd( epollfd, listenfd, false );
-
     http_conn::m_epollfd = epollfd;
 
     // 定时器
@@ -161,21 +156,21 @@ int main( int argc, char* argv[] ) {
     setnonblocking( pipefd[1] );    // 设置为非阻塞
     addfd( epollfd, pipefd[0] );    // 添加到epoll监听数组中，监听的事件为epollin，说明pipefd[0]为读端
 
+    client_data* users_timer = new client_data[MAX_FD];  
+    bool timeout = false;
+    alarm(TIMESLOT);  // 定时,5秒后产生SIGALARM信号
+
     // 设置信号处理函数
     addsig( SIGALRM );  // 当发生SIGALRM信号时（超时），向管道中写数据
     addsig( SIGTERM );  // 程序正常结束时，向管道中写数据
     bool stop_server = false;
 
-    client_data* users_timer = new client_data[MAX_FD];  
-    bool timeout = false;
-    alarm(TIMESLOT);  // 定时,5秒后产生SIGALARM信号
-    
+    // 服务器运行
     while(true) {
         
         if (stop_server == true){
             break;
         }
-
 
         // events 传出参数，保存了发送了变化的文件描述符的信息
         int number = epoll_wait( epollfd, events, MAX_EVENT_NUMBER, -1 );
