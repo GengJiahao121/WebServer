@@ -162,7 +162,11 @@ bool http_conn::read() {
 http_conn::LINE_STATUS http_conn::parse_line() {
     char temp;
     // 逐个读取缓冲区中的字符并判断
-    for ( ; m_checked_idx < m_read_idx; ++m_checked_idx ) {
+    // m_check_idx: 当前正在分析的字符在读缓冲区中的位置
+    // m_read_idx: 标识读缓冲区中已经读入的客户端数据的最后一个字节的下一个位置
+    // 逐个字符读取缓冲区
+    // 请求行、请求头和请求体之间是通过空行（"\r\n"）
+    for ( ; m_checked_idx < m_read_idx; ++m_checked_idx ) { 
         temp = m_read_buf[ m_checked_idx ];
         if ( temp == '\r' ) {   // 只有'\r'没有'\n'的情况
 
@@ -178,7 +182,7 @@ http_conn::LINE_STATUS http_conn::parse_line() {
             }
             return LINE_BAD;
 
-        // 
+        // 什么条件下才会出现这种情况呢？
         } else if( temp == '\n' )  {
             if( ( m_checked_idx > 1) && ( m_read_buf[ m_checked_idx - 1 ] == '\r' ) ) {
                 m_read_buf[ m_checked_idx-1 ] = '\0';
@@ -296,11 +300,12 @@ http_conn::HTTP_CODE http_conn::process_read() {
     char* text = 0; // 
 
     // parse_line()函数成功读取一行数据并返回状态码，parse_line函数如果成功的话把读取到的行末尾替换\r\n替换成\0\0
+    // 成功读取一行或者m_check_state == CHECK_STATE_CONTENT
     while (((m_check_state == CHECK_STATE_CONTENT) && (line_status == LINE_OK))
                 || ((line_status = parse_line()) == LINE_OK)) {
-        // 获取一行数据（把\r\n替换成\0\0了，读到\0就会结束）
-        text = get_line(); 
-        m_start_line = m_checked_idx;   // 更新下一完整行的起始index
+        // 获取上一步解析的行，因为把/r/n换成了/0/0，所以得到的是“一行”数据
+        text = get_line();  
+        m_start_line = m_checked_idx;   // 更新下一完整行的起始index，m_chenk_idx已经移动到/0/0之后了
         printf( "got 1 http line: %s\n", text );
 
         // m_check_state表示主状态机状态，CHECK_STATE_REQUESTLINE = 0, CHECK_STATE_HEADER, CHECK_STATE_CONTENT

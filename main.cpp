@@ -23,7 +23,7 @@
 
 static int epollfd;
 
-static int pipefd[2];   
+static int pipefd[2];  // 读端和写端 
 static sort_timer_lst timer_lst;    // 定时器双端链表
 
 // 添加文件描述符
@@ -92,7 +92,8 @@ int main( int argc, char* argv[] ) {
         return 1;
     }
 
-    int port = atoi( argv[1] );
+    // 将字符串转换为整数
+    int port = atoi( argv[1] ); 
 
     Config config;
 
@@ -254,7 +255,7 @@ int main( int argc, char* argv[] ) {
                     }
                 }
 
-            // 如果sockfd发生除了管道读事件之外的读事件，那么就是有客户端发送过来数据，需要服务的主线程读到读缓冲区
+            // 如果sockfd发生除了管道读事件之外的读事件，那么就是有客户端发送过来数据，需要服务器的主线程将数据读到读缓冲区
             } else if(events[i].events & EPOLLIN) {
 
                 util_timer* timer = users_timer[sockfd].timer;
