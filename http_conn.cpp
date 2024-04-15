@@ -23,17 +23,35 @@ void http_conn::initmysql_result(connection_pool *connPool)
     MYSQL *mysql = NULL;
     connectionRAII mysqlcon(&mysql, connPool);
 
+    
     //在user表中检索username，passwd数据，浏览器端输入
-    if (mysql_query(mysql, "SELECT username,passwd FROM user"))
+    if (mysql_query(mysql, "SELECT name,passwd FROM user"))
     {
          LOG_ERROR("SELECT error:%s\n", mysql_error(mysql));
     }
-
+    
     //从表中检索完整的结果集
     MYSQL_RES *result = mysql_store_result(mysql);
-
+    /*
+    if (result == nullptr) {
+        // 查询失败或者结果为空
+        std::cerr << "MySQL query failed or returned empty result." << std::endl;
+        // 可以尝试重新执行查询或者进行错误处理
+    } else {
+        // 获得了有效的结果集，可以继续处理
+    }
+    */
     //返回结果集中的列数
     int num_fields = mysql_num_fields(result);
+
+    if (num_fields <= 0) {
+    // 查询结果为空或者出现错误
+    std::cerr << "Number of fields in query result is invalid." << std::endl;
+    // 可以进行错误处理或者调试
+    } else {
+        // 查询结果有效，可以继续处理
+    }
+    std::cout << "Hello, world!" << std::endl;
 
     //返回所有字段结构的数组
     MYSQL_FIELD *fields = mysql_fetch_fields(result);
@@ -60,7 +78,14 @@ void addfd( int epollfd, int fd, bool one_shot ) {
     event.data.fd = fd;     // 添加到内核检测红黑树中的文件描述符
     event.events = EPOLLIN | EPOLLRDHUP;    // epoll检测的事件；EPOLLIN | EPOLLRDHUP 为可读或挂起
     if(one_shot) 
-    {
+    {   
+        /*
+        具体来说，当一个 socket 文件描述符被设置了 EPOLLONESHOT 标志位后，
+        它在触发了一次事件后就会自动从 epoll 监听队列中移除，直到应用程序显式重新将它添加到 epoll 监听队列中。
+        这意味着该 socket 只能被监听一次事件，而不是像普通情况下那样在每次事件发生时都会被重新添加到 epoll 中。
+        EPOLLONESHOT 的主要用途在于避免竞争条件，比如多个线程同时处理一个 socket 连接的情况。
+        通过一次性监听机制，可以确保每个事件只被一个线程处理，从而避免多个线程同时处理同一个事件可能引发的问题。
+        */
         // 防止同一个通信被不同的线程处理
         event.events |= EPOLLONESHOT;
     }
@@ -87,6 +112,8 @@ void modfd(int epollfd, int fd, int ev) {
 int http_conn::m_user_count = 0;    // 静态变量
 // 所有socket上的事件都被注册到同一个epoll内核事件中，所以设置成静态的
 int http_conn::m_epollfd = -1;  //  静态变量，没创建epoll时初始化为-1
+// 默认不开启日志系统
+int http_conn::m_close_log = 0;
 
 // 关闭连接
 void http_conn::close_conn() {
@@ -106,6 +133,7 @@ void http_conn::init(int sockfd, const sockaddr_in& addr){
     int reuse = 1;
     setsockopt( m_sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof( reuse ) );
 
+    // 添加监听
     addfd( m_epollfd, sockfd, true );
 
     m_user_count++;
@@ -122,23 +150,32 @@ void http_conn::init()
     m_url = 0;              // 文件连接
     m_version = 0;  // 协议版本
     m_content_length = 0;   // 消息体的长度
-    m_host = 0;     // 
+    m_host = 0;     
     m_start_line = 0;
     m_checked_idx = 0;
     m_read_idx = 0;
     m_write_idx = 0;
-    bzero(m_read_buf, READ_BUFFER_SIZE);
-    bzero(m_write_buf, READ_BUFFER_SIZE);
-    bzero(m_real_file, FILENAME_LEN);
+    bzero(m_read_buf, READ_BUFFER_SIZE); // 清空缓冲区
+    bzero(m_write_buf, READ_BUFFER_SIZE); // 清空缓冲区
+    bzero(m_real_file, FILENAME_LEN); // 清空缓冲区
 }
 
 // 循环读取客户数据，直到无数据可读或者对方关闭连接
 // 读到的数据存放到http_conn用户对象的m_read_buf数组也叫缓冲区中
 bool http_conn::read() {
+
+    /*
+    m_read_idx : 已经读了的字节所在位置的下一个位置
+    m_read_buf : 读缓冲区数组
+    */
+    // 缓冲区已经满了
     if( m_read_idx >= READ_BUFFER_SIZE ) {
         return false;
     }
+    
+    // 已经读了的字节数
     int bytes_read = 0;
+
     while(true) {
         // 从m_read_buf + m_read_idx索引出开始保存数据，大小是READ_BUFFER_SIZE - m_read_idx
         // recv()函数是一个阻塞函数，但是我们设置了sockfd为非阻塞；

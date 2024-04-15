@@ -22,7 +22,7 @@ struct client_data
 // 定时器类
 class util_timer {
 public:
-    util_timer() : prev(NULL), next(NULL){
+    util_timer() : prev(NULL), next(NULL){ // util_timer 类的构造函数通过初始化列表对 prev 和 next 成员变量进行了初始化，将它们都设置为 NULL
 
     }
 
@@ -65,6 +65,7 @@ public:
             head = timer;
             return;
         }
+        // 调用重载函数 add_timer(),把它插入链表中合适的位置，以保证链表的升序特性
         add_timer(timer, head);
     }
     

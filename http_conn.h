@@ -107,7 +107,7 @@ public:
     static int m_epollfd;       // 所有socket上的事件都被注册到同一个epoll内核事件中，所以设置成静态的
     static int m_user_count;    // 统计用户的数量
     MYSQL *mysql;
-    
+    static int m_close_log;
 
 private:
     int m_sockfd;           // 该HTTP连接的socket和对方的socket地址
@@ -141,7 +141,7 @@ private:
     int bytes_have_send;
     
     map<string, string> m_users;
-    int m_close_log;
+
     
     
 };
