@@ -1,12 +1,1 @@
-# 
-*ServerLog
-
-# 
-.vscode/
-
-# 
-*.out
-
-
-
-
+./coredump

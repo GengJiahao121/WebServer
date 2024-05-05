@@ -16,14 +16,15 @@
 #include "config.h"
 #include "sql_connection_pool.h"
 
-#define MAX_FD 65536   // 最大的文件描述符个数
-#define MAX_EVENT_NUMBER 10000  // 监听的最大的事件数量 
-
+// 最大的文件描述符个数
+#define MAX_FD 65536   
+// 监听的最大的事件数量
+#define MAX_EVENT_NUMBER 10000   
+// 定时器触发时间间隔
 #define TIMESLOT 5
 
 static int epollfd;
-
-static int pipefd[2];  // 读端和写端 
+static int pipefd[2];  // 读端和写端
 static sort_timer_lst timer_lst;    // 定时器双端链表
 
 // 添加文件描述符
