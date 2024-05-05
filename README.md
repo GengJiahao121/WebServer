@@ -137,7 +137,7 @@ exit;
 
 线程负责对每个用户到达的数据（分析请求）进行处理，其他的都是由主进程负责
 
-![Alt text](image.png)
+![Alt text](./pic/image.png)
 
 ### <a id='2-2'>2.2 使用正则表达式和有限状态机解析GET和POST请求</a>
 
