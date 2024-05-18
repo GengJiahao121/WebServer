@@ -29,7 +29,7 @@ public:
     // 方法：
     void init(int port , string user, string passWord, string databaseName,
               int log_write, int sql_num,
-              int thread_num, int close_log);
+              int thread_num, int close_log, int epoll_et);
 
     // 日志系统
     void log_write();
@@ -80,6 +80,7 @@ public:
 
     //epoll_event相关
     epoll_event events[MAX_EVENT_NUMBER];
+    int m_epoll_et;
 
     int m_listenfd;
 

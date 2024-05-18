@@ -26,6 +26,9 @@ public:
 
     //是否关闭日志
     int close_log;
+
+    //epoll工作模式
+    int epoll_et;
 };
 
 #endif

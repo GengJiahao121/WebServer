@@ -71,7 +71,7 @@ public:
     http_conn(){}
     ~http_conn(){}
 public:
-    void init(int sockfd, const sockaddr_in &addr, char *, int, string user, string passwd, string sqlname); // 初始化新接受的连接
+    void init(int sockfd, const sockaddr_in &addr, char *, int, string user, string passwd, string sqlname, int epoll_et); // 初始化新接受的连接
 
     void close_conn();  // 关闭连接
     void process(); // 处理客户端请求

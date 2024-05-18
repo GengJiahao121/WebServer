@@ -15,6 +15,9 @@ Config::Config(){
 
     //关闭日志,默认不关闭
     close_log = 1;
+
+    //epoll工作模式
+    epoll_et = 1;
 }
 
 void Config::parse_arg(int argc, char*argv[]){
@@ -48,6 +51,10 @@ void Config::parse_arg(int argc, char*argv[]){
         {
             close_log = atoi(optarg);
             break;
+        }
+        case 'e':
+        {
+            epoll_et = atoi(optarg);
         }
         default:
             break;

@@ -31,7 +31,7 @@ WebServer::~WebServer()
 
 
 void WebServer::init(int port , string user, string passWord, string databaseName, 
-                int log_write, int sql_num, int thread_num, int close_log)
+                int log_write, int sql_num, int thread_num, int close_log, int epoll_et)
 {
     m_port = port;
     m_user = user;
@@ -41,6 +41,7 @@ void WebServer::init(int port , string user, string passWord, string databaseNam
     m_sql_num = sql_num;
     m_thread_num = thread_num;
     m_close_log = close_log;
+    m_epoll_et = epoll_et;
 }
 
 
@@ -121,7 +122,7 @@ void WebServer::eventListen(){
 void WebServer::timer(int connfd, struct sockaddr_in client_address)
 {   
     printf("m_root = %s\n", m_root);
-    users[connfd].init(connfd, client_address, m_root, m_close_log, m_user, m_passWord, m_databaseName);
+    users[connfd].init(connfd, client_address, m_root, m_close_log, m_user, m_passWord, m_databaseName, m_epoll_et);
 
     char *doc_root = users[connfd].get_Doc_root();
     char *m_user = users[connfd].get_m_user();

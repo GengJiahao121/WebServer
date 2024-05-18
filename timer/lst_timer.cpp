@@ -187,13 +187,10 @@ void Utils::addfd(int epollfd, int fd, bool one_shot){
     if(one_shot) 
     {   
         /*
-        具体来说，当一个 socket 文件描述符被设置了 EPOLLONESHOT 标志位后，
-        它在触发了一次事件后就会自动从 epoll 监听队列中移除，直到应用程序显式重新将它添加到 epoll 监听队列中。
-        这意味着该 socket 只能被监听一次事件，而不是像普通情况下那样在每次事件发生时都会被重新添加到 epoll 中。
-        EPOLLONESHOT 的主要用途在于避免竞争条件，比如多个线程同时处理一个 socket 连接的情况。
-        通过一次性监听机制，可以确保每个事件只被一个线程处理，从而避免多个线程同时处理同一个事件可能引发的问题。
+        防止同一个通信被不同的线程处理。当数据读完，但没处理完时，对应的socket文件描述符会从epoll监听数组中移除，
+        也就是说socket有新的数据到达时，epoll不会监听到，当处理完时，重新将socket对应的文件描述符加入到epoll监听列表中，
+        防止多线程同时处理一个socket
         */
-        // 防止同一个通信被不同的线程处理
         event.events |= EPOLLONESHOT;
     }
     epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &event);

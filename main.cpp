@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
 
     WebServer server;
     server.init(config.PORT, user, passwd, databasename, config.LOGWrite, 
-                config.sql_num, config.thread_num, config.close_log);
+                config.sql_num, config.thread_num, config.close_log, config.epoll_et);
 
     // 日志系统
     server.log_write();

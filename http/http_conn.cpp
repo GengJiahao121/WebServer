@@ -70,7 +70,7 @@ int setnonblocking( int fd ) {
 }
 
 // 向epoll中添加需要监听的文件描述符
-void addfd( int epollfd, int fd, bool one_shot ) {
+void addfd( int epollfd, int fd, bool one_shot, int epoll_et ) {
     epoll_event event;
     event.data.fd = fd;     // 添加到内核检测红黑树中的文件描述符
     event.events = EPOLLIN | EPOLLRDHUP;    // epoll检测的事件；EPOLLIN | EPOLLRDHUP 为可读或挂起
@@ -86,6 +86,13 @@ void addfd( int epollfd, int fd, bool one_shot ) {
         // 防止同一个通信被不同的线程处理
         event.events |= EPOLLONESHOT;
     }
+    /*
+    if(epoll_et) {
+        event.events |= EPOLLET;    // 设置边沿触发
+    }
+    */
+    
+
     epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &event);
     // 设置文件描述符非阻塞
     setnonblocking(fd);  
@@ -123,7 +130,7 @@ void http_conn::close_conn() {
 
 //初始化连接,外部调用初始化套接字地址
 void http_conn::init(int sockfd, const sockaddr_in &addr, char *root,
-                     int close_log, string user, string passwd, string sqlname)
+                     int close_log, string user, string passwd, string sqlname, int epoll_et)
 {
     printf("http_conn::init root = %s\n", root);
     m_sockfd = sockfd;
@@ -133,7 +140,7 @@ void http_conn::init(int sockfd, const sockaddr_in &addr, char *root,
     int reuse = 1;
     setsockopt( m_sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof( reuse ) );
 
-    addfd(m_epollfd, sockfd, true);
+    addfd(m_epollfd, sockfd, true, epoll_et);
     m_user_count++;
 
     //当浏览器出现连接重置时，可能是网站根目录出错或http响应格式出错或者访问的文件中内容完全为空
