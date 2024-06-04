@@ -5,7 +5,7 @@ Config::Config(){
     PORT = 9006;
 
     //日志写入方式，默认同步
-    LOGWrite = 0;
+    LOGWrite = 1;
 
     //数据库连接池数量,默认8
     sql_num = 8;
@@ -14,7 +14,7 @@ Config::Config(){
     thread_num = 8;
 
     //关闭日志,默认不关闭
-    close_log = 1;
+    close_log = 0;
 
     //epoll工作模式
     epoll_et = 1;

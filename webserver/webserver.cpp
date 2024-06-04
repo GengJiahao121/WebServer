@@ -49,10 +49,13 @@ void WebServer::log_write(){
     if (0 == m_close_log)
     {
         //初始化日志
-        if (1 == m_log_write)
+        if (1 == m_log_write){
             Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
-        else
+            LOG_INFO("异步日志系统开启。");
+        } 
+        else{
             Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
+        }        
     }
 }
 
